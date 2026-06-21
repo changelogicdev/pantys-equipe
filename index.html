@@ -329,7 +329,7 @@
       <p class="muted lower" style="margin-bottom:14px">toque para escolher uma foto fofa 📸</p>
       <div class="field"><label class="lower">nome</label><input id="fname" placeholder="primeiro nome"></div>
       <div class="field"><label class="lower">sobrenome</label><input id="lname" placeholder="sobrenome"></div>
-      <div class="field"><label class="lower">aniversário (dd / mm)</label><input id="bday" placeholder="21 / 06"></div>
+      <div class="field"><label class="lower">aniversário (dd / mm)</label><input id="bday" inputmode="numeric" oninput="fmtBday(this)" placeholder="21 / 06"></div>
       <button class="btn block lower" onclick="enterPortal()">entrar no portal →</button>
       <p class="progress-note lower">local, equipe e data de entrada são confirmados pela admin 💌</p>
     </div>
@@ -523,7 +523,7 @@
     <input type="file" id="pfAvatarInput" accept="image/*" style="display:none" onchange="onPfAvatar(this)">
     <div class="field"><label class="lower">nome</label><input id="pfFname" placeholder="primeiro nome"></div>
     <div class="field"><label class="lower">sobrenome</label><input id="pfLname" placeholder="sobrenome"></div>
-    <div class="field"><label class="lower">aniversário (dd / mm)</label><input id="pfBday" placeholder="21 / 06"></div>
+    <div class="field"><label class="lower">aniversário (dd / mm)</label><input id="pfBday" inputmode="numeric" oninput="fmtBday(this)" placeholder="21 / 06"></div>
     <div class="field"><label class="lower">telefone</label><input id="pfPhone" disabled></div>
     <div class="ro-note lower">🔒 local, equipe e data de entrada são definidos pela admin</div>
     <div class="field"><label class="lower">local</label><input id="pfLoc" disabled></div>
@@ -596,13 +596,15 @@ function onAvatarPick(input){const f=input.files[0];if(!f)return;avatarFile=f;
   const b=document.getElementById('avatarBox');b.style.background=`center/cover no-repeat url('${URL.createObjectURL(f)}')`;b.innerHTML='';}
 
 async function enterPortal(){
-  if(document.getElementById('step-profile').classList.contains('active'))await saveProfile();
+  if(document.getElementById('step-profile').classList.contains('active')){
+    const ok=await saveProfile();if(!ok)return;   /* don't enter if not on the team */
+  }
   document.getElementById('gate').style.display='none';
   document.getElementById('portal').style.display='block';
   window.scrollTo(0,0);bootPortal();
 }
 async function saveProfile(){
-  if(!ME){alert('Seu número não está na lista do time. Fale com a admin 💌');return;}
+  if(!ME){alert('Seu número não está na lista do time. Fale com a admin 💌');return false;}
   const f=document.getElementById('fname').value.trim();
   const l=document.getElementById('lname').value.trim();
   const [d,m]=document.getElementById('bday').value.split('/').map(s=>parseInt(s,10));
@@ -611,8 +613,11 @@ async function saveProfile(){
     const {error}=await sb.storage.from('avatars').upload(path,avatarFile,{upsert:true,contentType:avatarFile.type});
     if(!error)photo_url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;}
   await sb.from('members').update({first_name:f,last_name:l,birth_day:d||null,birth_month:m||null,photo_url}).eq('id',ME.id);
-  await loadMe();
+  await loadMe();return true;
 }
+/* auto-format birthday as "DD / MM" while typing */
+function fmtBday(el){let d=el.value.replace(/\D/g,'').slice(0,4);
+  el.value=d.length>=3?d.slice(0,2)+' / '+d.slice(2):d;}
 async function logout(){if(confirm('Sair do portal?')){await sb.auth.signOut();location.reload();}}
 
 /* ---------- MY PROFILE (each person edits their own) ---------- */
@@ -710,6 +715,7 @@ const ACADEMIA=[
   {type:'yt',id:'0XnSy2EquRM',t:'Nós Somos Diferentes! Inovação para todos, feita por todos',th:'valores & cultura'},
   {type:'drive',id:'1WM1pB4GX5FdcMl-sIi65APS-PDBN7671',t:'Como ser uma marca plural',th:'valores & cultura',kind:'vídeo'},
   {type:'drivedoc',id:'1KB-iu5NUpN2O8Y7RDMV8a-sXR8jvPW9Y',t:'Como ser uma marca plural',th:'valores & cultura',kind:'documento'},
+  {type:'drivedoc',id:'10uPRk5MitODJmctIPUsaKHlq077MZSfa',t:'Pequeno Manual Antirracista — Djamila Ribeiro',th:'valores & cultura',kind:'livro · pdf'},
   {type:'yt',id:'rRytNQgSM4M',t:'O que é feedback: benefícios e modelos (Ep. 1)',th:'desenvolvimento profissional'},
   {type:'yt',id:'wW5INN4_tiQ',t:'Como melhorar a comunicação em 7 passos',th:'desenvolvimento profissional'},
   {type:'yt',id:'2uyHg6R8iK4',t:'O hábito nº 1 que todos os gênios têm em comum',th:'desenvolvimento profissional'},
