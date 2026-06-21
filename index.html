@@ -137,6 +137,8 @@
   .admin-table input{font-family:var(--font);font-size:14px;padding:6px 9px;border:1.5px solid var(--kraft-dk);
     border-radius:8px;background:#fff;width:100%;min-width:84px}
   .admin-table input:focus{outline:none;border-color:var(--red)}
+  .admin-table .badge-ok{background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .admin-table .badge-inv{background:#f0b429;color:#7a5600;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
 
   .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,42px) 0}
 
@@ -662,7 +664,12 @@ async function addMember(){
   const {error}=await sb.from('members').insert({phone,location:loc||null,team:eq||null,start_month:sm||null,start_year:sy||null,status:'invited'});
   if(error){alert('Erro ao adicionar:\n'+error.message);return;}
   ['newPhone','newStart','newLoc','newEq'].forEach(id=>document.getElementById(id).value='');
-  alert('Pessoa adicionada! 💌 Envie o link equipe.pantys.com.br pra ela — ela entra com esse telefone.');
+  buildAdminTable();
+  /* offer to send the invite via WhatsApp (pre-filled message to her number) */
+  const msg=encodeURIComponent('oi, lindeza! 💕 você foi adicionada ao time pantys. acesse o portal em https://equipe.pantys.com.br e entre com este número de telefone pra criar seu acesso ✨');
+  if(confirm('Pessoa adicionada e marcada como "convidada" 💌\n\nQuer enviar o convite por WhatsApp agora?')){
+    window.open('https://wa.me/'+phone.replace(/\D/g,'')+'?text='+msg,'_blank');
+  }
 }
 setMode('invite');
 
@@ -876,28 +883,37 @@ function toggleAdmin(){const p=document.getElementById('adminPanel');
   document.querySelector('.adminbtn').classList.toggle('on',show);
   if(show){buildAdminTable();p.scrollIntoView({behavior:'smooth'});}}
 const esc=s=>(s||'').replace(/"/g,'&quot;');
-function buildAdminTable(){
-  const head=`<thead><tr><th>#</th><th>nome</th><th>sobrenome</th><th>equipe</th><th>local</th>`+
-    `<th>aniversário</th><th>entrada (aaaa-mm)</th></tr></thead>`;
-  const body=TEAM.map((p,i)=>`<tr><td class="nm">${i+1}</td>`+
-    `<td><input value="${esc(p.f)}" onchange="editTeam(${i},'f',this.value)"></td>`+
-    `<td><input value="${esc(p.l)}" onchange="editTeam(${i},'l',this.value)"></td>`+
-    `<td><input value="${esc(p.eq)}" onchange="editTeam(${i},'eq',this.value)"></td>`+
-    `<td><input value="${esc(p.loc)}" onchange="editTeam(${i},'loc',this.value)"></td>`+
-    `<td><input value="${esc(p.bd)}" onchange="editTeam(${i},'bd',this.value)" style="min-width:70px"></td>`+
-    `<td><input value="${esc(p.start)}" onchange="editTeam(${i},'start',this.value)" style="min-width:90px"></td></tr>`).join('');
+let ADMIN_ROWS=[];
+async function buildAdminTable(){
+  const {data}=await sb.from('members').select('*').order('status').order('first_name',{nullsFirst:false});
+  ADMIN_ROWS=data||[];
+  const head=`<thead><tr><th>#</th><th>status</th><th>nome</th><th>sobrenome</th><th>telefone</th>`+
+    `<th>equipe</th><th>local</th><th>aniversário</th><th>entrada (aaaa-mm)</th></tr></thead>`;
+  const body=ADMIN_ROWS.map((p,i)=>{
+    const st=p.user_id?'<span class="badge-ok">ativa</span>':'<span class="badge-inv">convidada</span>';
+    const bd=p.birth_day?String(p.birth_day).padStart(2,'0')+'/'+String(p.birth_month||'').padStart(2,'0'):'';
+    const start=p.start_year?p.start_year+'-'+String(p.start_month||'').padStart(2,'0'):'';
+    return `<tr><td class="nm">${i+1}</td><td>${st}</td>`+
+      `<td><input value="${esc(p.first_name)}" onchange="editAdmin(${i},'first_name',this.value)"></td>`+
+      `<td><input value="${esc(p.last_name)}" onchange="editAdmin(${i},'last_name',this.value)"></td>`+
+      `<td><input value="${esc(p.phone)}" onchange="editAdmin(${i},'phone',this.value)" style="min-width:130px"></td>`+
+      `<td><input value="${esc(p.team)}" onchange="editAdmin(${i},'team',this.value)"></td>`+
+      `<td><input value="${esc(p.location)}" onchange="editAdmin(${i},'location',this.value)"></td>`+
+      `<td><input value="${esc(bd)}" onchange="editAdmin(${i},'bd',this.value)" style="min-width:70px"></td>`+
+      `<td><input value="${esc(start)}" onchange="editAdmin(${i},'start',this.value)" style="min-width:90px"></td></tr>`;}).join('');
   document.getElementById('adminTable').innerHTML=head+'<tbody>'+body+'</tbody>';
 }
-async function editTeam(i,k,v){
-  TEAM[i][k]=v.trim();rebuildFilters();renderTeam();renderCeleb();
-  const id=TEAM[i].id;if(!id)return;          /* only persist rows that exist in the DB */
-  const cols={f:'first_name',l:'last_name',eq:'team',loc:'location'};
+async function editAdmin(i,k,v){
+  const id=ADMIN_ROWS[i].id;v=v.trim();
   let patch={};
-  if(cols[k])patch[cols[k]]=v.trim();
-  else if(k==='bd'){const[d,m]=v.split('/').map(x=>parseInt(x,10));patch={birth_day:d||null,birth_month:m||null};}
+  if(k==='bd'){const[d,m]=v.split('/').map(x=>parseInt(x,10));patch={birth_day:d||null,birth_month:m||null};}
   else if(k==='start'){const[y,m]=v.split('-').map(x=>parseInt(x,10));patch={start_year:y||null,start_month:m||null};}
+  else if(k==='phone'){patch={phone:normalizePhone(v)};}
+  else patch[k]=v||null;
+  Object.assign(ADMIN_ROWS[i],patch);
   const {error}=await sb.from('members').update(patch).eq('id',id);
-  if(error)alert('Não consegui salvar essa edição:\n'+error.message);
+  if(error){alert('Não consegui salvar:\n'+error.message);return;}
+  rebuildFilters();renderTeam();renderCeleb();
 }
 
 /* ---------- DATA LOADERS + PORTAL BOOT ---------- */
