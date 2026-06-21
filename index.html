@@ -919,7 +919,9 @@ async function bootPortal(){
     const av=document.getElementById('meAvatar');
     if(ME.photo_url){av.textContent='';av.style.background=`center/cover no-repeat url('${ME.photo_url}')`;}
     else av.textContent=((ME.first_name||'?')[0]+((ME.last_name||'')[0]||'')).toUpperCase();}
-  document.querySelector('.adminbtn').style.display=(ME&&ME.role==='admin')?'':'none';
+  const isAdmin=!!(ME&&ME.role==='admin');
+  document.querySelector('.adminbtn').style.display=isAdmin?'':'none';
+  const campEdit=document.querySelector('.campaign .edit');if(campEdit)campEdit.style.display=isAdmin?'':'none';
   await Promise.all([loadMembers(),loadSettings()]);
   rebuildFilters();renderTeam();renderCeleb();await loadMural();
 }
