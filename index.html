@@ -84,8 +84,8 @@
   .field input{width:100%;padding:12px 15px;border-radius:13px;border:2px solid var(--kraft-dk);
     background:#fff;font-size:16px;font-family:var(--font)}
   .field input:focus{outline:none;border-color:var(--red)}
-  .code-row{display:flex;gap:10px;justify-content:center;margin:6px 0 18px}
-  .code-row input{width:52px;height:58px;text-align:center;font-size:24px;font-weight:600;
+  .code-row{display:flex;gap:7px;justify-content:center;margin:6px 0 18px}
+  .code-row input{width:44px;height:54px;text-align:center;font-size:22px;font-weight:600;
     border-radius:13px;border:2px solid var(--kraft-dk);background:#fff}
   .code-row input:focus{outline:none;border-color:var(--red)}
   .muted{font-size:13px;color:var(--ink-soft)}
@@ -304,10 +304,9 @@
 
     <div class="gate-step" id="step-code">
       <h2 class="lower">digite o código 🔐</h2>
-      <p class="sub lower">enviamos um código de 4 dígitos por SMS para <b id="phoneEcho"></b>.</p>
+      <p class="sub lower">enviamos um código de 6 dígitos por SMS para <b id="phoneEcho"></b>.</p>
       <div class="code-row">
-        <input maxlength="1" inputmode="numeric" oninput="hop(this,0)"><input maxlength="1" inputmode="numeric" oninput="hop(this,1)">
-        <input maxlength="1" inputmode="numeric" oninput="hop(this,2)"><input maxlength="1" inputmode="numeric" oninput="hop(this,3)">
+        <input maxlength="1" inputmode="numeric" oninput="hop(this,0)"><input maxlength="1" inputmode="numeric" oninput="hop(this,1)"><input maxlength="1" inputmode="numeric" oninput="hop(this,2)"><input maxlength="1" inputmode="numeric" oninput="hop(this,3)"><input maxlength="1" inputmode="numeric" oninput="hop(this,4)"><input maxlength="1" inputmode="numeric" oninput="hop(this,5)">
       </div>
       <button class="btn block lower" onclick="afterCode()">confirmar →</button>
       <p class="progress-note lower">não chegou? <a href="#" onclick="goCode();return false">reenviar código</a></p>
@@ -522,7 +521,7 @@ function setMode(m){mode=m;
 }
 function setDots(i){[0,1,2].forEach(n=>document.getElementById('d'+n).classList.toggle('on',n<=i));}
 function show(id){document.querySelectorAll('.gate-step').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function hop(el,i){const ins=document.querySelectorAll('.code-row input');if(el.value&&i<3)ins[i+1].focus();}
+function hop(el,i){const ins=document.querySelectorAll('.code-row input');if(el.value&&i<ins.length-1)ins[i+1].focus();}
 
 async function goCode(){
   gatePhone=normalizePhone(document.getElementById('phone').value);
@@ -534,7 +533,7 @@ async function goCode(){
 }
 async function afterCode(){
   const code=[...document.querySelectorAll('.code-row input')].map(i=>i.value).join('');
-  if(code.length<4){alert('Digite os 4 dígitos do código.');return;}
+  if(code.length<6){alert('Digite os 6 dígitos do código.');return;}
   const {error}=await sb.auth.verifyOtp({phone:gatePhone,token:code,type:'sms'});
   if(error){alert('Código inválido ou expirado:\n'+error.message);return;}
   await loadMe();
