@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>portal do time · pantys</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cpath%20fill='%23D6330F'%20d='M16%2029s-13-8.4-13-17a7%207%200%200%201%2013-3%207%207%200%200%201%2013%203c0%208.6-13%2017-13%2017z'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cpath%20fill='%23D6330F'%20d='M16%2029s-13-8.4-13-17a7%207%200%200%201%2013-3%207%207%200%200%201%2013%203c0%208.6-13%2017-13%2017z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -176,6 +178,8 @@
   .post .meta{font-size:13px;color:var(--ink-soft);margin-bottom:6px;font-weight:500}
   .post p{font-size:15.5px;color:#4a4039}
   .post .post-img{max-width:100%;border-radius:12px;margin-top:10px;display:block}
+  .post .post-edit{color:var(--red);cursor:pointer;font-weight:600}
+  .post .post-edit:hover{text-decoration:underline}
   .post .tag{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
     color:var(--red);background:#f7e2dc;padding:3px 10px;border-radius:999px;margin-bottom:7px}
   #muralArchive{display:none}
@@ -543,6 +547,19 @@
   </div>
 </div>
 
+<!-- EDIT MURAL POST (admin) -->
+<div id="postEditModal" class="modal-ov" style="display:none">
+  <div class="profile-card">
+    <span class="x" onclick="closePostEdit()">×</span>
+    <h2 class="lower">editar recado ✎</h2>
+    <div class="field"><label class="lower">título</label><input id="epTitle"></div>
+    <div class="field"><label class="lower">recado</label>
+      <textarea id="epBody" style="width:100%;min-height:100px;padding:11px 14px;border:2px solid var(--kraft-dk);border-radius:13px;font-family:var(--font);font-size:15px;resize:vertical"></textarea></div>
+    <button class="btn block lower" onclick="savePostEdit()" style="margin-top:4px">salvar alterações</button>
+    <button class="btn ghost block lower" onclick="deletePost()" style="margin-top:10px;color:var(--red)">excluir recado 🗑️</button>
+  </div>
+</div>
+
 <script>
 /* ---------- LOGO (image with text fallback) ---------- */
 function logoFallback(img){img.style.display='none';const s=img.nextElementSibling;if(s)s.style.display='inline-flex';}
@@ -687,18 +704,21 @@ setMode('invite');
     document.getElementById('portal').style.display='block';bootPortal();}}})();
 
 /* ---------- MURAL (company updates from admin) ---------- */
-function muralCard(p){return `<div class="post"><div class="badge">${p.icon}</div><div style="flex:1;min-width:0">`+
-  `<h3 class="lower">${p.title}</h3><div class="meta lower">${p.meta}</div><p class="lower">${p.text}</p>`+
+function muralCard(p){const adm=!!(ME&&ME.role==='admin');
+  return `<div class="post"><div class="badge">${p.icon}</div><div style="flex:1;min-width:0">`+
+  `<h3 class="lower">${p.title}</h3><div class="meta lower">${p.meta}${adm?` · <span class="post-edit" onclick="editPost('${p.id}')">editar ✎</span>`:''}</div>`+
+  `<p class="lower">${p.text}</p>`+
   `${p.img?`<img class="post-img" src="${p.img}" alt="">`:''}</div></div>`;}
 function timeAgo(ts){const days=Math.floor((Date.now()-new Date(ts))/86400000);
   if(days<=0)return'hoje';if(days===1)return'ontem';if(days<7)return`há ${days} dias`;
   const w=Math.floor(days/7);if(w<5)return`há ${w} ${w===1?'semana':'semanas'}`;
   const mo=Math.floor(days/30);return`há ${mo} ${mo===1?'mês':'meses'}`;}
+let MURAL_POSTS=[];
 async function loadMural(){
   const {data}=await sb.from('posts').select('*').order('created_at',{ascending:false});
-  const list=data||[];
+  const list=data||[];MURAL_POSTS=list;
   const joined=(ME&&ME.start_year)?new Date(ME.start_year,(ME.start_month||1)-1,1):new Date(0);
-  const fmt=p=>({icon:p.icon||'💬',title:p.title,text:p.body,meta:`admin · ${timeAgo(p.created_at)}`,img:p.image_url});
+  const fmt=p=>({id:p.id,icon:p.icon||'💬',title:p.title,text:p.body,meta:`admin · ${timeAgo(p.created_at)}`,img:p.image_url});
   const recent=list.slice(0,3);
   const archive=list.slice(3).filter(p=>new Date(p.created_at)>=joined);
   document.getElementById('muralRecent').innerHTML=recent.length?recent.map(p=>muralCard(fmt(p))).join(''):'<p class="empty lower">ainda não há recados — que tal o primeiro? 💌</p>';
@@ -728,6 +748,25 @@ async function postMsg(){
   document.getElementById('postTitle').value='';document.getElementById('postBody').value='';
   postImageFile=null;document.getElementById('postImageName').textContent='';document.getElementById('postImageInput').value='';
   loadMural();}
+
+/* ---------- ADMIN: edit / delete a mural post ---------- */
+let epId=null;
+function editPost(id){const p=MURAL_POSTS.find(x=>x.id===id);if(!p)return;epId=id;
+  document.getElementById('epTitle').value=p.title||'';
+  document.getElementById('epBody').value=p.body||'';
+  document.getElementById('postEditModal').style.display='flex';}
+function closePostEdit(){document.getElementById('postEditModal').style.display='none';}
+async function savePostEdit(){
+  const t=document.getElementById('epTitle').value.trim(),b=document.getElementById('epBody').value.trim();
+  if(!t||!b){alert('Escreva um título e o recado.');return;}
+  const {error}=await sb.from('posts').update({title:t,body:b}).eq('id',epId);
+  if(error){alert('Erro ao salvar:\n'+error.message);return;}
+  closePostEdit();loadMural();}
+async function deletePost(){
+  if(!confirm('Excluir este recado? Essa ação não pode ser desfeita.'))return;
+  const {error}=await sb.from('posts').delete().eq('id',epId);
+  if(error){alert('Erro ao excluir:\n'+error.message);return;}
+  closePostEdit();loadMural();}
 
 /* ---------- ACADEMIA PANTYS — themed training library ----------
    Each item has a type: 'yt' (YouTube), 'drive' (Drive video), 'drivedoc'
