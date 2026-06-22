@@ -410,7 +410,7 @@
         <div id="bdayList"></div>
       </div>
       <div class="card">
-        <h3 class="lower" style="margin-bottom:3px">🎉 aniversários de pantys</h3>
+        <h3 class="lower" style="margin-bottom:3px">🎉 anos na pantys</h3>
         <p class="lower" style="font-size:14px;color:var(--ink-soft);margin-bottom:12px">tempo de casa que merece festa!</p>
         <div id="annivList"></div>
       </div>
@@ -418,7 +418,7 @@
 
     <!-- ONBOARDING (above team) -->
     <div class="section-title" id="aprender">
-      <span class="emoji">📖</span><h2 class="lower">onboarding</h2><div class="line"></div>
+      <span class="emoji">📖</span><h2 class="lower">onboarding: faz parte de nossa jornada</h2><div class="line"></div>
     </div>
     <p class="lower" style="color:var(--ink-soft);margin-bottom:14px;max-width:680px">comece por aqui! a apresentação de boas-vindas com tudo sobre a pantys, nossa cultura, valores e como a gente funciona.</p>
     <div class="deck-embed">
@@ -426,7 +426,7 @@
     </div>
     <div class="grid cols-3" style="margin-top:16px">
       <div class="card res" style="cursor:pointer" onclick="openMedia('yt','qaT2wCMAT4w')">
-        <div class="ic">🎬</div><div><h3 class="lower">vídeo da apresentação</h3><p class="lower">a emily apresentando o onboarding, pra assistir junto com os slides 💛</p></div><span class="arrow">›</span></div>
+        <div class="ic">🎬</div><div><h3 class="lower">conheça nossa história</h3><p class="lower">a emily apresentando o onboarding, pra assistir junto com os slides 💛</p></div><span class="arrow">›</span></div>
     </div>
 
     <!-- ACADEMIA PANTYS (themed videos) -->
@@ -447,7 +447,7 @@
 
     <!-- TEAM CAROUSEL -->
     <div class="section-title" id="time">
-      <span class="emoji">💞</span><h2 class="lower">conheça o time</h2><div class="line"></div>
+      <span class="emoji">💞</span><h2 class="lower">equipe do futuro</h2><div class="line"></div>
     </div>
     <div class="filters">
       <select id="fLoc" onchange="renderTeam()"></select>
@@ -637,10 +637,12 @@ async function saveProfile(){
   const l=document.getElementById('lname').value.trim();
   const [d,m]=document.getElementById('bday').value.split('/').map(s=>parseInt(s,10));
   let photo_url=ME.photo_url;
-  if(avatarFile){const uid=(await sb.auth.getUser()).data.user.id;const path=uid+'.jpg';
-    const {error}=await sb.storage.from('avatars').upload(path,avatarFile,{upsert:true,contentType:avatarFile.type});
-    if(!error)photo_url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;}
-  await sb.from('members').update({first_name:f,last_name:l,birth_day:d||null,birth_month:m||null,photo_url}).eq('id',ME.id);
+  if(avatarFile){const uid=(await sb.auth.getUser()).data.user.id;const path=uid+'-'+Date.now()+'.jpg';
+    const {error:upErr}=await sb.storage.from('avatars').upload(path,avatarFile,{contentType:avatarFile.type});
+    if(upErr){alert('Não consegui salvar a foto:\n'+upErr.message);return false;}
+    photo_url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;}
+  const {error}=await sb.from('members').update({first_name:f,last_name:l,birth_day:d||null,birth_month:m||null,photo_url}).eq('id',ME.id);
+  if(error){alert('Não consegui salvar o perfil:\n'+error.message);return false;}
   await loadMe();return true;
 }
 /* auto-format birthday as "DD / MM" while typing */
@@ -671,12 +673,13 @@ async function saveMyProfile(){
   const l=document.getElementById('pfLname').value.trim();
   const [d,m]=document.getElementById('pfBday').value.split('/').map(s=>parseInt(s,10));
   let photo_url=ME.photo_url;
-  if(pfAvatarFile){const uid=(await sb.auth.getUser()).data.user.id;const path=uid+'.jpg';
-    const {error}=await sb.storage.from('avatars').upload(path,pfAvatarFile,{upsert:true,contentType:pfAvatarFile.type});
-    if(!error)photo_url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?v='+Date.now();}
+  if(pfAvatarFile){const uid=(await sb.auth.getUser()).data.user.id;const path=uid+'-'+Date.now()+'.jpg';
+    const {error:upErr}=await sb.storage.from('avatars').upload(path,pfAvatarFile,{contentType:pfAvatarFile.type});
+    if(upErr){alert('Não consegui salvar a foto:\n'+upErr.message);return;}
+    photo_url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;}
   const {error}=await sb.from('members').update({first_name:f,last_name:l,birth_day:d||null,birth_month:m||null,photo_url}).eq('id',ME.id);
   if(error){alert('Erro ao salvar:\n'+error.message);return;}
-  await loadMe();closeProfile();bootPortal();
+  await loadMe();closeProfile();bootPortal();alert('Perfil salvo! ✨');
 }
 
 /* ---------- ADMIN: add & invite a new person ---------- */
@@ -941,7 +944,7 @@ function renderCeleb(){
     `<div class="date">${p.bd.split('/')[0]}<small>${MONTHS[CURM-1].slice(0,3)}</small></div>`)).join('')
     :'<p class="empty lower">nenhum aniversário este mês 🎈</p>';
   document.getElementById('annivList').innerHTML=annivs.length?annivs.map(annivRow).join('')
-    :'<p class="empty lower">nenhum aniversário de pantys este mês 🎉</p>';
+    :'<p class="empty lower">ninguém completa anos na pantys este mês 🎉</p>';
 }
 renderCeleb();
 
