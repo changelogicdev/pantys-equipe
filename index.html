@@ -444,6 +444,7 @@
     </div>
     <p class="lower" style="color:var(--ink-soft);margin-bottom:14px;max-width:680px">um cuidado especial com você — corpo e mente. porque cuidar da gente também é coisa de pantys 💗</p>
     <div class="grid cols-3" id="saudeGrid"></div>
+    <div id="saudeMore" style="text-align:center;margin-top:18px"></div>
 
     <!-- TEAM CAROUSEL -->
     <div class="section-title" id="time">
@@ -780,9 +781,9 @@ async function deletePost(){
 const VTHEMES=['todos','valores & cultura','desenvolvimento profissional','sustentabilidade',
   'vendas','marketing','operações','atendimento ao cliente'];
 const ACADEMIA=[
-  {type:'yt',id:'q6Nv8NrcfA0',t:'Nós Somos o Sistema B Brasil',th:'valores & cultura'},
-  {type:'yt',id:'eQ1y-_-ujAI',t:'Movimento B: trabalhando juntos por uma nova economia',th:'valores & cultura'},
-  {type:'yt',id:'Mtlegd8E0Es',t:'Sistema B: uma economia inclusiva é possível',th:'valores & cultura'},
+  {type:'yt',id:'q6Nv8NrcfA0',t:'Nós Somos o Sistema B Brasil',th:'sustentabilidade'},
+  {type:'yt',id:'eQ1y-_-ujAI',t:'Movimento B: trabalhando juntos por uma nova economia',th:'sustentabilidade'},
+  {type:'yt',id:'Mtlegd8E0Es',t:'Sistema B: uma economia inclusiva é possível',th:'sustentabilidade'},
   {type:'yt',id:'0XnSy2EquRM',t:'Nós Somos Diferentes! Inovação para todos, feita por todos',th:'valores & cultura'},
   {type:'yt',id:'X-es1Dv5bJo',t:'Como ser uma marca plural',th:'valores & cultura'},
   {type:'drivedoc',id:'1KB-iu5NUpN2O8Y7RDMV8a-sXR8jvPW9Y',t:'Como ser uma marca plural',th:'valores & cultura',kind:'documento'},
@@ -829,7 +830,14 @@ const SAUDE=[
   {type:'drive',id:'1Rzwnzlv3m4UVMSdytSR39jqoeb_LN673',t:'Alimentação saudável descomplicada',kind:'vídeo'},
   {type:'yt',id:'whajIfBJMAA',t:'Sound healing'},
 ];
-document.getElementById('saudeGrid').innerHTML=SAUDE.map(mediaCard).join('');
+let sShowAll=false;const S_LIMIT=6;
+function toggleMoreSaude(){sShowAll=!sShowAll;renderSaude();}
+function renderSaude(){
+  const list=sShowAll?SAUDE:SAUDE.slice(0,S_LIMIT);
+  document.getElementById('saudeGrid').innerHTML=SAUDE.length?list.map(mediaCard).join(''):'<p class="empty lower">em breve 🎬</p>';
+  document.getElementById('saudeMore').innerHTML=SAUDE.length>S_LIMIT
+    ?`<button class="btn ghost lower" onclick="toggleMoreSaude()">${sShowAll?'ver menos ↑':'ver mais ('+(SAUDE.length-S_LIMIT)+') ↓'}</button>`:'';}
+renderSaude();
 document.getElementById('footerLine').textContent='pantys portal '+new Date().getFullYear();
 
 function openMedia(type,id){
