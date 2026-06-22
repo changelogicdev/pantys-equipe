@@ -141,6 +141,8 @@
   .admin-table input:focus{outline:none;border-color:var(--red)}
   .admin-table .badge-ok{background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
   .admin-table .badge-inv{background:#f0b429;color:#7a5600;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .admin-table .rmbtn{background:#fff;color:var(--red);border:1.5px solid var(--red);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;font-family:var(--font);cursor:pointer;white-space:nowrap}
+  .admin-table .rmbtn:hover{background:var(--red);color:#fff}
 
   .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,42px) 0}
 
@@ -954,7 +956,7 @@ async function buildAdminTable(){
   const {data}=await sb.from('members').select('*').order('status').order('first_name',{nullsFirst:false});
   ADMIN_ROWS=data||[];
   const head=`<thead><tr><th>#</th><th>status</th><th>nome</th><th>sobrenome</th><th>telefone</th>`+
-    `<th>equipe</th><th>local</th><th>aniversário</th><th>entrada (aaaa-mm)</th></tr></thead>`;
+    `<th>equipe</th><th>local</th><th>aniversário</th><th>entrada (aaaa-mm)</th><th></th></tr></thead>`;
   const body=ADMIN_ROWS.map((p,i)=>{
     const st=p.user_id?'<span class="badge-ok">ativa</span>':'<span class="badge-inv">convidada</span>';
     const bd=p.birth_day?String(p.birth_day).padStart(2,'0')+'/'+String(p.birth_month||'').padStart(2,'0'):'';
@@ -966,7 +968,8 @@ async function buildAdminTable(){
       `<td><input value="${esc(p.team)}" onchange="editAdmin(${i},'team',this.value)"></td>`+
       `<td><input value="${esc(p.location)}" onchange="editAdmin(${i},'location',this.value)"></td>`+
       `<td><input value="${esc(bd)}" onchange="editAdmin(${i},'bd',this.value)" style="min-width:70px"></td>`+
-      `<td><input value="${esc(start)}" onchange="editAdmin(${i},'start',this.value)" style="min-width:90px"></td></tr>`;}).join('');
+      `<td><input value="${esc(start)}" onchange="editAdmin(${i},'start',this.value)" style="min-width:90px"></td>`+
+      `<td><button class="rmbtn" onclick="removeMember(${i})">remover</button></td></tr>`;}).join('');
   document.getElementById('adminTable').innerHTML=head+'<tbody>'+body+'</tbody>';
 }
 async function editAdmin(i,k,v){
@@ -980,6 +983,13 @@ async function editAdmin(i,k,v){
   const {error}=await sb.from('members').update(patch).eq('id',id);
   if(error){alert('Não consegui salvar:\n'+error.message);return;}
   rebuildFilters();renderTeam();renderCeleb();
+}
+async function removeMember(i){
+  const p=ADMIN_ROWS[i];const who=p.first_name?`${p.first_name} ${p.last_name||''}`.trim():(p.phone||'esta pessoa');
+  if(!confirm(`Remover ${who} do time? Ela perde o acesso ao portal. Essa ação não pode ser desfeita.`))return;
+  const {error}=await sb.from('members').delete().eq('id',p.id);
+  if(error){alert('Erro ao remover:\n'+error.message);return;}
+  buildAdminTable();rebuildFilters();renderTeam();renderCeleb();
 }
 
 /* ---------- DATA LOADERS + PORTAL BOOT ---------- */
