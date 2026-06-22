@@ -447,9 +447,9 @@
 
     <!-- SAÚDE FÍSICO E MENTAL (separate special grouping) -->
     <div class="section-title" id="saude">
-      <span class="emoji">🧘‍♀️</span><h2 class="lower">saúde física e mental</h2><div class="line"></div>
+      <span class="emoji">🧘‍♀️</span><h2 class="lower">saúde pessoal: física, mental e financeira</h2><div class="line"></div>
     </div>
-    <p class="lower" style="color:var(--ink-soft);margin-bottom:14px;max-width:680px">um cuidado especial com você — corpo e mente. porque cuidar da gente também é coisa de pantys 💗</p>
+    <p class="lower" style="color:var(--ink-soft);margin-bottom:14px;max-width:680px">um cuidado especial com você — corpo, mente e finanças. porque cuidar da gente também é coisa de pantys 💗</p>
     <div class="carousel">
       <button class="cbtn prev" onclick="scrollEl('saudeGrid',-1)" aria-label="anterior">‹</button>
       <div class="track" id="saudeGrid"></div>
@@ -528,7 +528,7 @@
         <div class="addgrid">
           <input id="trTitle" placeholder="título">
           <input id="trLink" placeholder="link do YouTube ou Google Drive">
-          <select id="trSection"><option value="academia">academia</option><option value="saude">saúde física e mental</option><option value="saude_feminina">saúde feminina</option></select>
+          <select id="trSection"><option value="academia">academia</option><option value="saude">saúde pessoal</option><option value="saude_feminina">saúde feminina</option></select>
           <select id="trTheme"></select>
           <select id="trType">
             <option value="auto">tipo: detectar do link</option>
@@ -822,7 +822,7 @@ async function deletePost(){
    (Drive document), or 'folder' (Drive folder). Drive files must be shared
    "anyone with the link can view". Add an item by dropping it into ACADEMIA. */
 const VTHEMES=['todos','valores & cultura','desenvolvimento profissional','sustentabilidade',
-  'vendas','marketing','atendimento'];
+  'marketing','atendimento e vendas'];
 let ACADEMIA=[
   {type:'yt',id:'q6Nv8NrcfA0',t:'Nós Somos o Sistema B Brasil',th:'sustentabilidade'},
   {type:'yt',id:'eQ1y-_-ujAI',t:'Movimento B: trabalhando juntos por uma nova economia',th:'sustentabilidade'},
@@ -839,7 +839,7 @@ let ACADEMIA=[
   {type:'yt',id:'3VVEPs9Gfcg',t:'Solvay and Pantys team up',th:'sustentabilidade'},
   {type:'yt',id:'I4bm8Fu48us',t:'Clever Carbon Training',th:'sustentabilidade'},
   {type:'yt',id:'TFJaZCBuAJU',t:'Sustentabilidade na Pantys',th:'sustentabilidade'},
-  {type:'folder',id:'1-BBu6H7rLRxEatmkUIG-bSL2VgSYNstB',t:'Treinamento nas lojas',th:'vendas',kind:'8 vídeos'},
+  {type:'folder',id:'1-BBu6H7rLRxEatmkUIG-bSL2VgSYNstB',t:'Treinamento nas lojas',th:'atendimento e vendas',kind:'8 vídeos'},
 ];
 function thumbStyle(it){
   if(it.type==='yt')return `background-image:url('https://i.ytimg.com/vi/${it.id}/hqdefault.jpg')`;
@@ -926,7 +926,7 @@ async function removeTraining(id){
 function buildTrainingsAdmin(){
   const el=document.getElementById('trList');if(!el)return;
   el.innerHTML=TRAININGS_ALL.length?TRAININGS_ALL.map(r=>
-    `<div class="tr-row"><span class="lower"><b>${r.section==='saude'?'saúde física':r.section==='saude_feminina'?'saúde feminina':'academia'}</b>${r.theme?' · '+r.theme:''} · ${esc(r.title)}</span>`+
+    `<div class="tr-row"><span class="lower"><b>${r.section==='saude'?'saúde pessoal':r.section==='saude_feminina'?'saúde feminina':'academia'}</b>${r.theme?' · '+r.theme:''} · ${esc(r.title)}</span>`+
     `<button class="rmbtn" onclick="removeTraining('${r.id}')">remover</button></div>`).join('')
     :'<p class="empty lower">nenhum treinamento cadastrado ainda</p>';
 }
