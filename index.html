@@ -360,6 +360,7 @@
       <a href="#aprender" class="lower">onboarding</a>
       <a href="#academia" class="lower">academia</a>
       <a href="#saude" class="lower">saúde</a>
+      <a href="#feminina" class="lower">saúde feminina</a>
       <a href="#time" class="lower">equipe</a>
       <a href="#contatos" class="lower">contatos</a>
     </nav>
@@ -455,6 +456,17 @@
       <button class="cbtn next" onclick="scrollEl('saudeGrid',1)" aria-label="próximo">›</button>
     </div>
 
+    <!-- SAÚDE FEMININA -->
+    <div class="section-title" id="feminina">
+      <span class="emoji">🌸</span><h2 class="lower">saúde feminina</h2><div class="line"></div>
+    </div>
+    <p class="lower" style="color:var(--ink-soft);margin-bottom:14px;max-width:680px">conteúdos sobre menstruação, maternidade e incontinência — pra a gente entender, viver e cuidar de cada ciclo 💗</p>
+    <div class="carousel">
+      <button class="cbtn prev" onclick="scrollEl('femGrid',-1)" aria-label="anterior">‹</button>
+      <div class="track" id="femGrid"></div>
+      <button class="cbtn next" onclick="scrollEl('femGrid',1)" aria-label="próximo">›</button>
+    </div>
+
     <!-- TEAM CAROUSEL -->
     <div class="section-title" id="time">
       <span class="emoji">💞</span><h2 class="lower">equipe do futuro</h2><div class="line"></div>
@@ -516,7 +528,7 @@
         <div class="addgrid">
           <input id="trTitle" placeholder="título">
           <input id="trLink" placeholder="link do YouTube ou Google Drive">
-          <select id="trSection"><option value="academia">academia</option><option value="saude">saúde física e mental</option></select>
+          <select id="trSection"><option value="academia">academia</option><option value="saude">saúde física e mental</option><option value="saude_feminina">saúde feminina</option></select>
           <select id="trTheme"></select>
           <select id="trType">
             <option value="auto">tipo: detectar do link</option>
@@ -810,7 +822,7 @@ async function deletePost(){
    (Drive document), or 'folder' (Drive folder). Drive files must be shared
    "anyone with the link can view". Add an item by dropping it into ACADEMIA. */
 const VTHEMES=['todos','valores & cultura','desenvolvimento profissional','sustentabilidade',
-  'vendas','marketing','operações','atendimento ao cliente'];
+  'vendas','marketing','atendimento'];
 let ACADEMIA=[
   {type:'yt',id:'q6Nv8NrcfA0',t:'Nós Somos o Sistema B Brasil',th:'sustentabilidade'},
   {type:'yt',id:'eQ1y-_-ujAI',t:'Movimento B: trabalhando juntos por uma nova economia',th:'sustentabilidade'},
@@ -862,6 +874,13 @@ function renderSaude(){const g=document.getElementById('saudeGrid');
   g.innerHTML=SAUDE.length?SAUDE.map(mediaCard).join(''):'<p class="empty lower">em breve 🎬</p>';
   g.scrollLeft=0;}
 renderSaude();
+
+/* ---------- SAÚDE FEMININA ---------- */
+let SAUDE_FEM=[];
+function renderFem(){const g=document.getElementById('femGrid');
+  g.innerHTML=SAUDE_FEM.length?SAUDE_FEM.map(mediaCard).join(''):'<p class="empty lower">em breve — conteúdos sobre menstruação, maternidade e incontinência 🌸</p>';
+  g.scrollLeft=0;}
+renderFem();
 document.getElementById('footerLine').textContent='pantys portal '+new Date().getFullYear();
 
 /* ---------- TRAININGS FROM DATABASE (admin-managed) ---------- */
@@ -873,6 +892,7 @@ async function loadTrainings(){
   const map=r=>({type:r.type,id:r.media_id,t:r.title,th:r.theme||undefined,kind:r.kind||undefined});
   ACADEMIA=data.filter(r=>r.section==='academia').map(map);
   SAUDE=data.filter(r=>r.section==='saude').map(map);
+  SAUDE_FEM=data.filter(r=>r.section==='saude_feminina').map(map);
 }
 function detectType(url){if(/youtu\.be|youtube\.com/.test(url))return 'yt';if(/drive\.google\.com\/drive\/folders/.test(url))return 'folder';return 'drive';}
 function parseMediaId(url,type){
@@ -894,19 +914,19 @@ async function addTraining(){
   const {error}=await sb.from('trainings').insert({section,type,media_id,title,theme,kind,sort_order:Math.floor(Date.now()/1000)});
   if(error){alert('Erro ao adicionar:\n'+error.message);return;}
   ['trTitle','trLink','trKind'].forEach(id=>document.getElementById(id).value='');
-  await loadTrainings();renderThemes();renderVideos();renderSaude();buildTrainingsAdmin();
+  await loadTrainings();renderThemes();renderVideos();renderSaude();renderFem();buildTrainingsAdmin();
   alert('Treinamento adicionado! ✨ (aparece no topo)');
 }
 async function removeTraining(id){
   if(!confirm('Remover este treinamento?'))return;
   const {error}=await sb.from('trainings').delete().eq('id',id);
   if(error){alert('Erro ao remover:\n'+error.message);return;}
-  await loadTrainings();renderThemes();renderVideos();renderSaude();buildTrainingsAdmin();
+  await loadTrainings();renderThemes();renderVideos();renderSaude();renderFem();buildTrainingsAdmin();
 }
 function buildTrainingsAdmin(){
   const el=document.getElementById('trList');if(!el)return;
   el.innerHTML=TRAININGS_ALL.length?TRAININGS_ALL.map(r=>
-    `<div class="tr-row"><span class="lower"><b>${r.section==='saude'?'saúde':'academia'}</b>${r.theme?' · '+r.theme:''} · ${esc(r.title)}</span>`+
+    `<div class="tr-row"><span class="lower"><b>${r.section==='saude'?'saúde física':r.section==='saude_feminina'?'saúde feminina':'academia'}</b>${r.theme?' · '+r.theme:''} · ${esc(r.title)}</span>`+
     `<button class="rmbtn" onclick="removeTraining('${r.id}')">remover</button></div>`).join('')
     :'<p class="empty lower">nenhum treinamento cadastrado ainda</p>';
 }
@@ -1100,7 +1120,7 @@ async function bootPortal(){
   const campEdit=document.querySelector('.campaign .edit');if(campEdit)campEdit.style.display=isAdmin?'':'none';
   await Promise.all([loadMembers(),loadSettings(),loadTrainings()]);
   rebuildFilters();renderTeam();renderCeleb();
-  renderThemes();renderVideos();renderSaude();
+  renderThemes();renderVideos();renderSaude();renderFem();
   await loadMural();
 }
 
