@@ -424,6 +424,7 @@
     <p class="lower" style="color:var(--ink-soft);margin-bottom:14px;max-width:680px">vídeos pra aprender e crescer com a gente — filtre por tema 💛</p>
     <div class="vtabs" id="videoThemes"></div>
     <div class="grid cols-3" id="videoGrid"></div>
+    <div id="videoMore" style="text-align:center;margin-top:18px"></div>
 
     <!-- SAÚDE FÍSICO E MENTAL (separate special grouping) -->
     <div class="section-title" id="saude">
@@ -745,11 +746,17 @@ function mediaCard(it){const kind=it.kind?`<span class="kind lower">${it.kind}</
 let vThemeI=0;
 function renderThemes(){document.getElementById('videoThemes').innerHTML=
   VTHEMES.map((t,i)=>`<button class="${i===vThemeI?'on':''}" onclick="setTheme(${i})">${t}</button>`).join('');}
-function setTheme(i){vThemeI=i;renderThemes();renderVideos();}
+let vShowAll=false;const V_LIMIT=12;
+function setTheme(i){vThemeI=i;vShowAll=false;renderThemes();renderVideos();}
+function toggleMoreVideos(){vShowAll=!vShowAll;renderVideos();}
 function renderVideos(){const th=VTHEMES[vThemeI];
-  const list=vThemeI===0?ACADEMIA:ACADEMIA.filter(v=>v.th===th);
-  document.getElementById('videoGrid').innerHTML=list.length?list.map(mediaCard).join('')
-    :'<p class="empty lower">ainda não temos conteúdos nesse tema — em breve! 🎬</p>';}
+  const all=vThemeI===0?ACADEMIA:ACADEMIA.filter(v=>v.th===th);
+  const list=vShowAll?all:all.slice(0,V_LIMIT);
+  document.getElementById('videoGrid').innerHTML=all.length?list.map(mediaCard).join('')
+    :'<p class="empty lower">ainda não temos conteúdos nesse tema — em breve! 🎬</p>';
+  const more=document.getElementById('videoMore');
+  more.innerHTML=all.length>V_LIMIT
+    ?`<button class="btn ghost lower" onclick="toggleMoreVideos()">${vShowAll?'ver menos ↑':'ver mais ('+(all.length-V_LIMIT)+') ↓'}</button>`:'';}
 renderThemes();renderVideos();
 
 /* ---------- SAÚDE FÍSICO E MENTAL (curated) ---------- */
