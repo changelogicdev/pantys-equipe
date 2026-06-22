@@ -122,8 +122,10 @@
   .admin-note{background:#fcefd2;border:1px solid #f3dca8;color:#8a5d00;border-radius:12px;
     padding:11px 15px;font-size:14px;margin-bottom:14px}
   .addgrid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center}
-  .addgrid input{flex:1;min-width:150px;padding:10px 13px;border:2px solid var(--kraft-dk);border-radius:12px;font-family:var(--font);font-size:14px;background:#fff}
-  .addgrid input:focus{outline:none;border-color:var(--red)}
+  .addgrid input,.addgrid select{flex:1;min-width:150px;padding:10px 13px;border:2px solid var(--kraft-dk);border-radius:12px;font-family:var(--font);font-size:14px;background:#fff;color:var(--ink)}
+  .addgrid input:focus,.addgrid select:focus{outline:none;border-color:var(--red)}
+  .tr-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #efe6d6;font-size:14px}
+  .tr-row:last-child{border-bottom:none}
   .modal-ov{position:fixed;inset:0;z-index:60;background:rgba(44,37,33,.55);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
   .profile-card{background:var(--cream2);border-radius:24px;box-shadow:var(--shadow);padding:30px 28px;width:100%;max-width:420px;position:relative;max-height:92vh;overflow:auto}
   .profile-card h2{font-size:23px;margin-bottom:16px}
@@ -500,6 +502,28 @@
       </div>
 
       <div class="admin-table-wrap"><table class="admin-table" id="adminTable"></table></div>
+
+      <div class="section-title" style="margin-top:34px"><span class="emoji">🎓</span><h2 class="lower">gerenciar treinamentos</h2><div class="line"></div></div>
+      <div class="card" style="border:1.5px dashed var(--coral)">
+        <strong class="lower" style="color:var(--ink)">➕ adicionar treinamento</strong>
+        <div class="addgrid">
+          <input id="trTitle" placeholder="título">
+          <input id="trLink" placeholder="link do YouTube ou Google Drive">
+          <select id="trSection"><option value="academia">academia</option><option value="saude">saúde físico e mental</option></select>
+          <select id="trTheme"></select>
+          <select id="trType">
+            <option value="auto">tipo: detectar do link</option>
+            <option value="yt">vídeo (YouTube)</option>
+            <option value="drive">vídeo (Google Drive)</option>
+            <option value="drivedoc">documento / PDF (Drive)</option>
+            <option value="folder">pasta de vídeos (Drive)</option>
+          </select>
+          <input id="trKind" placeholder="rótulo opcional (ex: documento)">
+          <button class="btn lower" onclick="addTraining()">adicionar ♡</button>
+        </div>
+        <p class="lower" style="font-size:13px;color:var(--ink-soft);margin-top:10px">o tema é usado só na academia. novos treinamentos aparecem no topo. dica: pro YouTube use vídeos não listados; pro Drive, compartilhe como "qualquer pessoa com o link".</p>
+        <div id="trList" style="margin-top:14px"></div>
+      </div>
     </section>
 
   </div><!-- /wrap -->
@@ -780,7 +804,7 @@ async function deletePost(){
    "anyone with the link can view". Add an item by dropping it into ACADEMIA. */
 const VTHEMES=['todos','valores & cultura','desenvolvimento profissional','sustentabilidade',
   'vendas','marketing','operações','atendimento ao cliente'];
-const ACADEMIA=[
+let ACADEMIA=[
   {type:'yt',id:'q6Nv8NrcfA0',t:'Nós Somos o Sistema B Brasil',th:'sustentabilidade'},
   {type:'yt',id:'eQ1y-_-ujAI',t:'Movimento B: trabalhando juntos por uma nova economia',th:'sustentabilidade'},
   {type:'yt',id:'Mtlegd8E0Es',t:'Sistema B: uma economia inclusiva é possível',th:'sustentabilidade'},
@@ -823,8 +847,8 @@ function renderVideos(){const th=VTHEMES[vThemeI];
     ?`<button class="btn ghost lower" onclick="toggleMoreVideos()">${vShowAll?'ver menos ↑':'ver mais ('+(all.length-V_LIMIT)+') ↓'}</button>`:'';}
 renderThemes();renderVideos();
 
-/* ---------- SAÚDE FÍSICO E MENTAL (curated) ---------- */
-const SAUDE=[
+/* ---------- SAÚDE FÍSICO E MENTAL ---------- */
+let SAUDE=[
   {type:'drive',id:'1bxuFjTQfkrFuVA_fZ8IJQVDmkxZqvp5e',t:'Saúde mental',kind:'vídeo'},
   {type:'yt',id:'gXhdBKQmCAA',t:'Saúde bucal'},
   {type:'drive',id:'1Rzwnzlv3m4UVMSdytSR39jqoeb_LN673',t:'Alimentação saudável descomplicada',kind:'vídeo'},
@@ -839,6 +863,53 @@ function renderSaude(){
     ?`<button class="btn ghost lower" onclick="toggleMoreSaude()">${sShowAll?'ver menos ↑':'ver mais ('+(SAUDE.length-S_LIMIT)+') ↓'}</button>`:'';}
 renderSaude();
 document.getElementById('footerLine').textContent='pantys portal '+new Date().getFullYear();
+
+/* ---------- TRAININGS FROM DATABASE (admin-managed) ---------- */
+let TRAININGS_ALL=[];
+async function loadTrainings(){
+  const {data,error}=await sb.from('trainings').select('*').order('sort_order',{ascending:false}).order('created_at',{ascending:false});
+  if(error||!data)return;            /* table not set up yet → keep built-in fallback */
+  TRAININGS_ALL=data;
+  const map=r=>({type:r.type,id:r.media_id,t:r.title,th:r.theme||undefined,kind:r.kind||undefined});
+  ACADEMIA=data.filter(r=>r.section==='academia').map(map);
+  SAUDE=data.filter(r=>r.section==='saude').map(map);
+}
+function detectType(url){if(/youtu\.be|youtube\.com/.test(url))return 'yt';if(/drive\.google\.com\/drive\/folders/.test(url))return 'folder';return 'drive';}
+function parseMediaId(url,type){
+  if(type==='yt'){const m=url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:'';}
+  if(type==='folder'){const m=url.match(/folders\/([\w-]+)/);return m?m[1]:'';}
+  const m=url.match(/\/d\/([\w-]+)/)||url.match(/[?&]id=([\w-]+)/);return m?m[1]:'';
+}
+async function addTraining(){
+  const title=document.getElementById('trTitle').value.trim();
+  const link=document.getElementById('trLink').value.trim();
+  if(!title||!link){alert('Informe um título e um link.');return;}
+  const section=document.getElementById('trSection').value;
+  let type=document.getElementById('trType').value;
+  if(type==='auto')type=detectType(link);
+  const media_id=parseMediaId(link,type);
+  if(!media_id){alert('Não consegui ler o ID do link. Confira o link do YouTube ou Drive.');return;}
+  const theme=section==='academia'?(document.getElementById('trTheme').value||null):null;
+  const kind=document.getElementById('trKind').value.trim()||null;
+  const {error}=await sb.from('trainings').insert({section,type,media_id,title,theme,kind,sort_order:Math.floor(Date.now()/1000)});
+  if(error){alert('Erro ao adicionar:\n'+error.message);return;}
+  ['trTitle','trLink','trKind'].forEach(id=>document.getElementById(id).value='');
+  await loadTrainings();renderThemes();renderVideos();renderSaude();buildTrainingsAdmin();
+  alert('Treinamento adicionado! ✨ (aparece no topo)');
+}
+async function removeTraining(id){
+  if(!confirm('Remover este treinamento?'))return;
+  const {error}=await sb.from('trainings').delete().eq('id',id);
+  if(error){alert('Erro ao remover:\n'+error.message);return;}
+  await loadTrainings();renderThemes();renderVideos();renderSaude();buildTrainingsAdmin();
+}
+function buildTrainingsAdmin(){
+  const el=document.getElementById('trList');if(!el)return;
+  el.innerHTML=TRAININGS_ALL.length?TRAININGS_ALL.map(r=>
+    `<div class="tr-row"><span class="lower"><b>${r.section==='saude'?'saúde':'academia'}</b>${r.theme?' · '+r.theme:''} · ${esc(r.title)}</span>`+
+    `<button class="rmbtn" onclick="removeTraining('${r.id}')">remover</button></div>`).join('')
+    :'<p class="empty lower">nenhum treinamento cadastrado ainda</p>';
+}
 
 function openMedia(type,id){
   if(type==='yt'){document.getElementById('lbFrame').src='https://www.youtube.com/embed/'+id+'?autoplay=1';
@@ -960,7 +1031,9 @@ renderCeleb();
 function toggleAdmin(){const p=document.getElementById('adminPanel');
   const show=p.style.display!=='block';p.style.display=show?'block':'none';
   document.querySelector('.adminbtn').classList.toggle('on',show);
-  if(show){buildAdminTable();p.scrollIntoView({behavior:'smooth'});}}
+  if(show){buildAdminTable();buildTrainingsAdmin();fillTrThemes();p.scrollIntoView({behavior:'smooth'});}}
+function fillTrThemes(){const sel=document.getElementById('trTheme');if(!sel||sel.options.length)return;
+  sel.innerHTML=VTHEMES.filter(t=>t!=='todos').map(t=>`<option>${t}</option>`).join('');}
 const esc=s=>(s||'').replace(/"/g,'&quot;');
 let ADMIN_ROWS=[];
 async function buildAdminTable(){
@@ -1025,8 +1098,10 @@ async function bootPortal(){
   const isAdmin=!!(ME&&ME.role==='admin');
   document.querySelector('.adminbtn').style.display=isAdmin?'':'none';
   const campEdit=document.querySelector('.campaign .edit');if(campEdit)campEdit.style.display=isAdmin?'':'none';
-  await Promise.all([loadMembers(),loadSettings()]);
-  rebuildFilters();renderTeam();renderCeleb();await loadMural();
+  await Promise.all([loadMembers(),loadSettings(),loadTrainings()]);
+  rebuildFilters();renderTeam();renderCeleb();
+  renderThemes();renderVideos();renderSaude();
+  await loadMural();
 }
 
 /* ---------- CAMPAIGN BANNER (admin swap demo) ---------- */
