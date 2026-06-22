@@ -246,7 +246,7 @@
   .person .photo .loc{position:absolute;top:10px;left:10px;background:rgba(252,248,241,.92);color:var(--ink);
     font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px}
   .person .photo .sign{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;
-    background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+    background:#faebf0;color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 1px 4px rgba(44,37,33,.18)}
   .person .body{padding:14px 16px 18px}
   .person .body h3{font-size:18px;margin-bottom:1px}
   .person .body .role{font-size:14px;color:var(--red);font-weight:600;text-transform:lowercase}
@@ -695,7 +695,7 @@ async function addMember(){
   ['newPhone','newStart','newLoc','newEq'].forEach(id=>document.getElementById(id).value='');
   buildAdminTable();
   /* offer to send the invite via WhatsApp (pre-filled message to her number) */
-  const msg=encodeURIComponent('oi, lindeza! 💕 você foi adicionada ao time pantys. acesse o portal em https://equipe.pantys.com.br e entre com este número de telefone pra criar seu acesso ✨');
+  const msg=encodeURIComponent('oi, lindeza! \u{1F495} você foi adicionada ao time pantys. acesse o portal em https://equipe.pantys.com.br e entre com este número de telefone pra criar seu acesso \u{2728}');
   if(confirm('Pessoa adicionada e marcada como "convidada" 💌\n\nQuer enviar o convite por WhatsApp agora?')){
     window.open('https://wa.me/'+phone.replace(/\D/g,'')+'?text='+msg,'_blank');
   }
